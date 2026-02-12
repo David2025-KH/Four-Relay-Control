@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay Control Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2.2rem;
+      color: #333;
+    }
+    #datetime {
+      margin-bottom: 25px;
+      font-size: 1.1rem;
+      color: #555;
+      background: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .relay-card {
+      background: white;
+      padding: 25px 50px;
+      margin: 15px;
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 350px;
+      transition: 0.3s;
+    }
+    .relay-card.active {
+      border-left: 8px solid #4CAF50;
+    }
+    .relay-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .relay-info img {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      object-fit: contain;
+      transition: 0.2s;
+    }
+    button {
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    button.on {
+      background-color: #4CAF50;
+      color: white;
+    }
+    button.off {
+      background-color: #f44336;
+      color: white;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+
+    @media (max-width: 400px) {
+      .relay-card {
+        width: 90%;
+        padding: 20px;
+      }
+      .relay-info img {
+        width: 50px;
+        height: 50px;
+      }
+      button {
+        padding: 12px 24px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Relay Control Dashboard</h1>
+  <div id="datetime"></div>
+
+  <div class="relay-card" id="relay1-card">
+    <div class="relay-info">
+      <img id="relay1-img" src="Light off.png" alt="Light 1">
+      <span style="font-size:1.2rem;">Relay 1</span>
+    </div>
+    <button id="relay1-btn">OFF</button>
+  </div>
+  
+  <div class="relay-card" id="relay2-card">
+    <div class="relay-info">
+      <img id="relay2-img" src="Light off.png" alt="Light 2">
+      <span style="font-size:1.2rem;">Relay 2</span>
+    </div>
+    <button id="relay2-btn">OFF</button>
+  </div>
+  
+  <div class="relay-card" id="relay3-card">
+    <div class="relay-info">
+      <img id="relay3-img" src="Light off.png" alt="Light 3">
+      <span style="font-size:1.2rem;">Relay 3</span>
+    </div>
+    <button id="relay3-btn">OFF</button>
+  </div>
+  
+  <div class="relay-card" id="relay4-card">
+    <div class="relay-info">
+      <img id="relay4-img" src="Light off.png" alt="Light 4">
+      <span style="font-size:1.2rem;">Relay 4</span>
+    </div>
+    <button id="relay4-btn">OFF</button>
+  </div>
+
+  <script>
+    // ===== Firebase Config =====
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://data-logging-f2cfe-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const relayCards = {
+      1: document.getElementById("relay1-card"),
+      2: document.getElementById("relay2-card"),
+      3: document.getElementById("relay3-card"),
+      4: document.getElementById("relay4-card")
+    };
+
+    function updateRelayUI(relayNum, state) {
+      const btn = document.getElementById(`relay${relayNum}-btn`);
+      const img = document.getElementById(`relay${relayNum}-img`);
+      btn.textContent = state ? "ON" : "OFF";
+      btn.className = state ? "on" : "off";
+      relayCards[relayNum].classList.toggle("active", state);
+      img.src = state ? "Light on.png" : "Light off.png";
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      const path = `/Relays/Relay${i}`;
+      db.ref(path).on("value", snapshot => {
+        const val = snapshot.val();
+        const state = val === 1 || val === true;
+        updateRelayUI(i, state);
+      });
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById(`relay${i}-btn`).addEventListener("click", () => toggleRelay(i));
+    }
+
+    function toggleRelay(relayNum) {
+      const path = `/Relays/Relay${relayNum}`;
+      db.ref(path).get().then(snapshot => {
+        const current = snapshot.val();
+        const newState = current === 1 || current === true ? 0 : 1;
+        db.ref(path).set(newState);
+      });
+    }
+
+    // ===== Date & Time =====
+    function updateDateTime() {
+      const now = new Date();
+      const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      };
+      document.getElementById("datetime").textContent =
+        now.toLocaleDateString('en-US', options);
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+  </script>
+</body>
+</html>
