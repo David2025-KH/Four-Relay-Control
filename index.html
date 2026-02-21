@@ -51,19 +51,19 @@ button.relay-btn:hover { opacity:0.9; }
 
   <div class="relay-card" id="relay1-card">
     <div class="relay-info"><img id="relay1-img" src="Light off.png" alt="Light 1"><span>Relay 1</span></div>
-    <button class="relay-btn" id="relay1-btn">OFF</button>
+    <button class="relay-btn off" id="relay1-btn">OFF</button>
   </div>
   <div class="relay-card" id="relay2-card">
     <div class="relay-info"><img id="relay2-img" src="Light off.png" alt="Light 2"><span>Relay 2</span></div>
-    <button class="relay-btn" id="relay2-btn">OFF</button>
+    <button class="relay-btn off" id="relay2-btn">OFF</button>
   </div>
   <div class="relay-card" id="relay3-card">
     <div class="relay-info"><img id="relay3-img" src="Light off.png" alt="Light 3"><span>Relay 3</span></div>
-    <button class="relay-btn" id="relay3-btn">OFF</button>
+    <button class="relay-btn off" id="relay3-btn">OFF</button>
   </div>
   <div class="relay-card" id="relay4-card">
     <div class="relay-info"><img id="relay4-img" src="Light off.png" alt="Light 4"><span>Relay 4</span></div>
-    <button class="relay-btn" id="relay4-btn">OFF</button>
+    <button class="relay-btn off" id="relay4-btn">OFF</button>
   </div>
 </div>
 
@@ -168,26 +168,28 @@ document.getElementById("deviceSelect").addEventListener("change", e=>{
   setupRelayListeners(selectedDevice);
 });
 
+// ===== Attach buttons once =====
+for(let i=1; i<=4; i++){
+  document.getElementById(`relay${i}-btn`).addEventListener("click", () => toggleRelay(i));
+}
+
 function setupRelayListeners(deviceID){
+  relayRefs.forEach(r=>r.ref.off("value", r.listener));
   relayRefs = [];
+
   for(let i=1;i<=4;i++){
     const path = `/Devices/${deviceID}/relays/Relay${i}`;
     const refDb = db.ref(path);
 
-    // Remove old click listener and attach new one
-    const btn = document.getElementById(`relay${i}-btn`);
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-    newBtn.addEventListener("click", () => toggleRelay(i));
-
     const listener = refDb.on("value", snapshot=>{
       const val = snapshot.val();
       const state = val === 1;
+      const btn = document.getElementById(`relay${i}-btn`);
       const img = document.getElementById(`relay${i}-img`);
-      newBtn.textContent = state ? "ON":"OFF";
-      newBtn.className = `relay-btn ${state?'on':'off'}`;
+      btn.textContent = state ? "ON" : "OFF";
+      btn.className = `relay-btn ${state ? 'on' : 'off'}`;
       relayCards[i].classList.toggle("active", state);
-      img.src = state ? "Light on.png":"Light off.png";
+      img.src = state ? "Light on.png" : "Light off.png";
     });
 
     relayRefs.push({ ref: refDb, listener });
