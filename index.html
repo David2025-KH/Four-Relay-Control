@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Relay Control Dashboard</title>
 
-<!-- Firebase Compat SDKs -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -14,34 +14,29 @@
 body { font-family: Arial; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
 #login-container { background:white; padding:50px; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.15); text-align:center; }
 #googleSignInBtn { background:#4285F4; color:white; border:none; border-radius:8px; font-size:1.1rem; padding:14px 30px; cursor:pointer; }
-#googleSignInBtn:hover { opacity:0.9; }
 #dashboard { display:none; flex-direction:column; align-items:center; padding:20px; width:100%; max-width:450px; }
-#user-info { margin-bottom:20px; font-size:1.1rem; color:#555; text-align:center; }
-#logoutBtn { margin-bottom:20px; padding:10px 24px; font-size:1rem; border:none; border-radius:8px; background:#f44336; color:white; cursor:pointer; }
-#logoutBtn:hover { opacity:0.9; }
-h1 { margin-bottom:10px; font-size:2.2rem; color:#333; }
-#datetime { margin-bottom:25px; font-size:1.1rem; color:#555; background:white; padding:10px 20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
-.relay-card { background:white; padding:25px 50px; margin:15px; border-radius:16px; box-shadow:0 6px 16px rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:space-between; width:100%; max-width:350px; }
+#logoutBtn { margin-bottom:20px; padding:10px 24px; border:none; border-radius:8px; background:#f44336; color:white; cursor:pointer; }
+#datetime { margin-bottom:25px; font-size:1rem; background:white; padding:10px 20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+.relay-card { background:white; padding:20px 30px; margin:10px; border-radius:16px; box-shadow:0 6px 16px rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:space-between; width:100%; max-width:350px; }
 .relay-card.active { border-left:8px solid #4CAF50; }
-.relay-info { display:flex; align-items:center; gap:20px; }
-.relay-info img { width:60px; height:60px; border-radius:10px; object-fit:contain; }
-button.relay-btn { padding:14px 28px; font-size:1.1rem; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+.relay-info { display:flex; align-items:center; gap:15px; }
+.relay-info img { width:50px; height:50px; object-fit:contain; }
+button.relay-btn { padding:12px 22px; font-size:1rem; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
 button.relay-btn.on { background:#4CAF50; color:white; }
 button.relay-btn.off { background:#f44336; color:white; }
-button.relay-btn:hover { opacity:0.9; }
 </style>
 </head>
 <body>
 
 <div id="login-container">
-  <h1>Login with Google</h1>
+  <h2>Login with Google</h2>
   <button id="googleSignInBtn">Sign in with Gmail</button>
 </div>
 
 <div id="dashboard">
   <div id="user-info"></div>
   <button id="logoutBtn">Logout</button>
-  <h1>Relay Control Dashboard</h1>
+  <h2>Relay Control Dashboard</h2>
   <div id="datetime"></div>
 
   <div style="margin-bottom:20px;">
@@ -49,25 +44,30 @@ button.relay-btn:hover { opacity:0.9; }
     <select id="deviceSelect"></select>
   </div>
 
+  <!-- Relay Cards -->
   <div class="relay-card" id="relay1-card">
-    <div class="relay-info"><img id="relay1-img" src="Light off.png" alt="Light 1"><span>Relay 1</span></div>
+    <div class="relay-info"><img id="relay1-img" src="Light off.png"><span>Relay 1</span></div>
     <button class="relay-btn off" id="relay1-btn">OFF</button>
   </div>
+
   <div class="relay-card" id="relay2-card">
-    <div class="relay-info"><img id="relay2-img" src="Light off.png" alt="Light 2"><span>Relay 2</span></div>
+    <div class="relay-info"><img id="relay2-img" src="Light off.png"><span>Relay 2</span></div>
     <button class="relay-btn off" id="relay2-btn">OFF</button>
   </div>
+
   <div class="relay-card" id="relay3-card">
-    <div class="relay-info"><img id="relay3-img" src="Light off.png" alt="Light 3"><span>Relay 3</span></div>
+    <div class="relay-info"><img id="relay3-img" src="Light off.png"><span>Relay 3</span></div>
     <button class="relay-btn off" id="relay3-btn">OFF</button>
   </div>
+
   <div class="relay-card" id="relay4-card">
-    <div class="relay-info"><img id="relay4-img" src="Light off.png" alt="Light 4"><span>Relay 4</span></div>
+    <div class="relay-info"><img id="relay4-img" src="Light off.png"><span>Relay 4</span></div>
     <button class="relay-btn off" id="relay4-btn">OFF</button>
   </div>
 </div>
 
 <script>
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDjzlI-47-q8zakU2W3MVFRxGqXyFYvnXE",
   authDomain: "data-logging-f2cfe.firebaseapp.com",
@@ -79,146 +79,117 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.database();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-const loginContainer = document.getElementById("login-container");
-const dashboard = document.getElementById("dashboard");
-const userInfo = document.getElementById("user-info");
-
 let selectedDevice = null;
 let relayRefs = [];
-const relayCards = {
-  1: document.getElementById("relay1-card"),
-  2: document.getElementById("relay2-card"),
-  3: document.getElementById("relay3-card"),
-  4: document.getElementById("relay4-card")
+
+// LOGIN
+document.getElementById("googleSignInBtn").onclick = () => {
+  auth.signInWithPopup(provider).catch(err => alert(err.message));
 };
 
-// ===== Sign In =====
-document.getElementById("googleSignInBtn").addEventListener("click", async () => {
-  try {
-    const result = await auth.signInWithPopup(provider);
-    const user = result.user;
-    const userRef = db.ref(`/Users/${user.uid}`);
-    const snapshot = await userRef.get();
-    if (!snapshot.exists()) {
-      await userRef.set({ email: user.email, displayName: user.displayName, lastLogin: Date.now(), banned: false });
-    } else {
-      await userRef.update({ lastLogin: Date.now() });
-    }
-  } catch(err){
-    console.error("Login error:", err);
-    alert("Login failed! Check console.");
+document.getElementById("logoutBtn").onclick = () => auth.signOut();
+
+// AUTH STATE
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    document.getElementById("login-container").style.display = "flex";
+    document.getElementById("dashboard").style.display = "none";
+    return;
   }
+
+  document.getElementById("login-container").style.display = "none";
+  document.getElementById("dashboard").style.display = "flex";
+  document.getElementById("user-info").innerText = "Logged in: " + user.email;
+
+  loadDevices();
 });
 
-// ===== Auth Listener =====
-auth.onAuthStateChanged(async (user) => {
-  if(user){
-    try{
-      const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
-      const isBanned = bannedSnap.exists() ? bannedSnap.val() : false;
-      if(isBanned){
-        alert("You are banned.");
-        await auth.signOut();
-        return;
-      }
-      loginContainer.style.display = "none";
-      dashboard.style.display = "flex";
-      userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
-      loadDevices();
-    }catch(err){
-      console.error("Dashboard load error:", err);
-      loginContainer.style.display = "flex";
-      dashboard.style.display = "none";
-    }
-  } else {
-    loginContainer.style.display = "flex";
-    dashboard.style.display = "none";
-  }
-});
-
-document.getElementById("logoutBtn").addEventListener("click", () => auth.signOut());
-
-// ===== Device & Relay Handling =====
-function loadDevices(){
+// LOAD DEVICES
+function loadDevices() {
   const select = document.getElementById("deviceSelect");
-  db.ref("/Devices").on("value", snapshot=>{
-    const devices = snapshot.val() || {};
-    const prevSelected = select.value;
+
+  db.ref("/Devices").on("value", snapshot => {
+    const devices = snapshot.val();
+    if (!devices) return;
+
     select.innerHTML = "";
-    for(const dev in devices){
+
+    Object.keys(devices).forEach(dev => {
       const opt = document.createElement("option");
       opt.value = dev;
       opt.textContent = dev;
       select.appendChild(opt);
-    }
-    select.value = devices[prevSelected] ? prevSelected : select.options[0]?.value;
+    });
+
     selectedDevice = select.value;
-    removeRelayListeners();
-    setupRelayListeners(selectedDevice);
+    if (selectedDevice) setupRelayListeners(selectedDevice);
   });
 }
 
-document.getElementById("deviceSelect").addEventListener("change", e=>{
-  removeRelayListeners();
+document.getElementById("deviceSelect").addEventListener("change", e => {
   selectedDevice = e.target.value;
   setupRelayListeners(selectedDevice);
 });
 
-// ===== Attach buttons once =====
-for(let i=1; i<=4; i++){
-  document.getElementById(`relay${i}-btn`).addEventListener("click", () => toggleRelay(i));
-}
+// SETUP RELAYS
+function setupRelayListeners(deviceID) {
 
-function setupRelayListeners(deviceID){
-  relayRefs.forEach(r=>r.ref.off("value", r.listener));
+  relayRefs.forEach(r => r.ref.off());
   relayRefs = [];
 
-  for(let i=1;i<=4;i++){
-    const path = `/Devices/${deviceID}/relays/Relay${i}`;
-    const refDb = db.ref(path);
+  for (let i = 1; i <= 4; i++) {
 
-    const listener = refDb.on("value", snapshot=>{
-      const val = snapshot.val();
-      const state = val === 1;
+    const ref = db.ref(`/Devices/${deviceID}/relays/Relay${i}`);
+
+    const listener = ref.on("value", snapshot => {
+
+      const state = snapshot.val() === 1;
+
       const btn = document.getElementById(`relay${i}-btn`);
+      const card = document.getElementById(`relay${i}-card`);
       const img = document.getElementById(`relay${i}-img`);
+
       btn.textContent = state ? "ON" : "OFF";
-      btn.className = `relay-btn ${state ? 'on' : 'off'}`;
-      relayCards[i].classList.toggle("active", state);
+      btn.className = `relay-btn ${state ? "on" : "off"}`;
+      card.classList.toggle("active", state);
       img.src = state ? "Light on.png" : "Light off.png";
     });
 
-    relayRefs.push({ ref: refDb, listener });
+    relayRefs.push({ ref, listener });
   }
 }
 
-function removeRelayListeners(){
-  relayRefs.forEach(r=>r.ref.off("value", r.listener));
-  relayRefs=[];
-}
+// TOGGLE (SAFE TRANSACTION)
+function toggleRelay(num) {
+  if (!selectedDevice) return;
 
-function toggleRelay(relayNum){
-  if(!selectedDevice) return;
-  const path = `/Devices/${selectedDevice}/relays/Relay${relayNum}`;
-  db.ref(path).get().then(snapshot=>{
-    const current = snapshot.val() ?? 0;
-    const newState = current === 1 ? 0 : 1;
-    db.ref(path).set(newState).catch(err=>console.error(`Error toggling Relay${relayNum}:`, err));
+  const ref = db.ref(`/Devices/${selectedDevice}/relays/Relay${num}`);
+
+  ref.transaction(current => {
+    if (current === null) return 1;
+    return current === 1 ? 0 : 1;
   });
 }
 
-// ===== Date & Time =====
-function updateDateTime(){
-  const now = new Date();
-  const options={weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'};
-  document.getElementById("datetime").textContent = now.toLocaleString('en-US', options);
+// BUTTON LISTENER
+for (let i = 1; i <= 4; i++) {
+  document.getElementById(`relay${i}-btn`)
+    .addEventListener("click", () => toggleRelay(i));
 }
-setInterval(updateDateTime,1000);
+
+// DATE TIME
+function updateDateTime() {
+  document.getElementById("datetime").textContent =
+    new Date().toLocaleString();
+}
+setInterval(updateDateTime, 1000);
 updateDateTime();
 </script>
+
 </body>
 </html>
