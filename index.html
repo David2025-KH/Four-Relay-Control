@@ -87,26 +87,27 @@ const loginContainer = document.getElementById("login-container");
 const dashboard = document.getElementById("dashboard");
 const userInfo = document.getElementById("user-info");
 
+let selectedDevice = null;
+let relayRefs = [];
+const relayCards = {
+  1: document.getElementById("relay1-card"),
+  2: document.getElementById("relay2-card"),
+  3: document.getElementById("relay3-card"),
+  4: document.getElementById("relay4-card")
+};
+
 // ===== Sign In =====
 document.getElementById("googleSignInBtn").addEventListener("click", async () => {
   try {
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
-
-    // Only create new user if not exists
     const userRef = db.ref(`/Users/${user.uid}`);
     const snapshot = await userRef.get();
     if (!snapshot.exists()) {
-      await userRef.set({
-        email: user.email,
-        displayName: user.displayName,
-        lastLogin: Date.now(),
-        banned: false
-      });
+      await userRef.set({ email: user.email, displayName: user.displayName, lastLogin: Date.now(), banned: false });
     } else {
       await userRef.update({ lastLogin: Date.now() });
     }
-
   } catch(err){
     console.error("Login error:", err);
     alert("Login failed! Check console.");
@@ -118,20 +119,16 @@ auth.onAuthStateChanged(async (user) => {
   if(user){
     try{
       const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
-      const isBanned = bannedSnap.exists() ? bannedSnap.val() : false; // default false
+      const isBanned = bannedSnap.exists() ? bannedSnap.val() : false;
       if(isBanned){
         alert("You are banned.");
         await auth.signOut();
         return;
       }
-
       loginContainer.style.display = "none";
       dashboard.style.display = "flex";
       userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
-
-      // Load devices
       loadDevices();
-
     }catch(err){
       console.error("Dashboard load error:", err);
       loginContainer.style.display = "flex";
@@ -145,17 +142,7 @@ auth.onAuthStateChanged(async (user) => {
 
 document.getElementById("logoutBtn").addEventListener("click", () => auth.signOut());
 
-// ===== Relay Dashboard =====
-const relayCards = {
-  1: document.getElementById("relay1-card"),
-  2: document.getElementById("relay2-card"),
-  3: document.getElementById("relay3-card"),
-  4: document.getElementById("relay4-card")
-};
-
-let selectedDevice = null;
-let relayRefs = [];
-
+// ===== Device & Relay Handling =====
 function loadDevices(){
   const select = document.getElementById("deviceSelect");
   db.ref("/Devices").on("value", snapshot=>{
@@ -168,7 +155,7 @@ function loadDevices(){
       opt.textContent = dev;
       select.appendChild(opt);
     }
-    if(prevSelected && devices[prevSelected]) select.value = prevSelected;
+    select.value = devices[prevSelected] ? prevSelected : select.options[0]?.value;
     selectedDevice = select.value;
     removeRelayListeners();
     setupRelayListeners(selectedDevice);
@@ -176,7 +163,7 @@ function loadDevices(){
 }
 
 document.getElementById("deviceSelect").addEventListener("change", e=>{
-  removeRelayListeners(); // remove old listeners first
+  removeRelayListeners();
   selectedDevice = e.target.value;
   setupRelayListeners(selectedDevice);
 });
@@ -186,16 +173,23 @@ function setupRelayListeners(deviceID){
   for(let i=1;i<=4;i++){
     const path = `/Devices/${deviceID}/relays/Relay${i}`;
     const refDb = db.ref(path);
+
+    // Remove old click listener and attach new one
+    const btn = document.getElementById(`relay${i}-btn`);
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener("click", () => toggleRelay(i));
+
     const listener = refDb.on("value", snapshot=>{
       const val = snapshot.val();
       const state = val === 1;
-      const btn = document.getElementById(`relay${i}-btn`);
       const img = document.getElementById(`relay${i}-img`);
-      btn.textContent = state ? "ON":"OFF";
-      btn.className = `relay-btn ${state?'on':'off'}`;
+      newBtn.textContent = state ? "ON":"OFF";
+      newBtn.className = `relay-btn ${state?'on':'off'}`;
       relayCards[i].classList.toggle("active", state);
       img.src = state ? "Light on.png":"Light off.png";
     });
+
     relayRefs.push({ ref: refDb, listener });
   }
 }
@@ -203,10 +197,6 @@ function setupRelayListeners(deviceID){
 function removeRelayListeners(){
   relayRefs.forEach(r=>r.ref.off("value", r.listener));
   relayRefs=[];
-}
-
-for(let i=1;i<=4;i++){
-  document.getElementById(`relay${i}-btn`).addEventListener("click",()=>toggleRelay(i));
 }
 
 function toggleRelay(relayNum){
