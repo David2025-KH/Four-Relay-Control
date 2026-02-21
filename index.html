@@ -71,13 +71,13 @@
 <script>
   // ===== Firebase Config =====
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSyDjzlI-47-q8zakU2W3MVFRxGqXyFYvnXE",
     authDomain: "data-logging-f2cfe.firebaseapp.com",
     databaseURL: "https://data-logging-f2cfe-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "data-logging-f2cfe",
-    storageBucket: "data-logging-f2cfe.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    storageBucket: "data-logging-f2cfe.firebasestorage.app",
+    messagingSenderId: "899288602117",
+    appId: "1:899288602117:web:2f41f71e7eb8dfe54bee6c"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -91,18 +91,21 @@
   const provider = new firebase.auth.GoogleAuthProvider();
 
   // ===== Sign in with Popup =====
-  document.getElementById("googleSignInBtn").addEventListener("click", () => {
-    auth.signInWithPopup(provider)
-      .then(result => {
-        const user = result.user;
-        db.ref(`/Users/${user.uid}`).set({
-          email: user.email,
-          displayName: user.displayName,
-          createdAt: Date.now(),
-          banned: false
-        });
-      })
-      .catch(err => console.error("Login error:", err));
+  document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+    try {
+      const result = await auth.signInWithPopup(provider);
+      const user = result.user;
+      // Save user info in DB if not exists
+      db.ref(`/Users/${user.uid}`).update({
+        email: user.email,
+        displayName: user.displayName,
+        lastLogin: Date.now(),
+        banned: false
+      });
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Login failed! Check console for details.");
+    }
   });
 
   // ===== Auth state listener =====
