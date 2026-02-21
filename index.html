@@ -11,25 +11,25 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-  body { font-family: Arial; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-  #login-container { background:white; padding:50px; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.15); text-align:center; }
-  #login-container h1 { margin-bottom:30px; font-size:2rem; color:#333; }
-  #googleSignInBtn { background:#4285F4; color:white; border:none; border-radius:8px; font-size:1.1rem; padding:14px 30px; cursor:pointer; }
-  #googleSignInBtn:hover { opacity:0.9; }
-  #dashboard { display:none; flex-direction:column; align-items:center; padding:20px; width:100%; max-width:450px; }
-  #user-info { margin-bottom:20px; font-size:1.1rem; color:#555; text-align:center; }
-  #logoutBtn { margin-bottom:20px; padding:10px 24px; font-size:1rem; border:none; border-radius:8px; background:#f44336; color:white; cursor:pointer; }
-  #logoutBtn:hover { opacity:0.9; }
-  h1 { margin-bottom:10px; font-size:2.2rem; color:#333; }
-  #datetime { margin-bottom:25px; font-size:1.1rem; color:#555; background:white; padding:10px 20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
-  .relay-card { background:white; padding:25px 50px; margin:15px; border-radius:16px; box-shadow:0 6px 16px rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:space-between; width:100%; max-width:350px; }
-  .relay-card.active { border-left:8px solid #4CAF50; }
-  .relay-info { display:flex; align-items:center; gap:20px; }
-  .relay-info img { width:60px; height:60px; border-radius:10px; object-fit:contain; }
-  button.relay-btn { padding:14px 28px; font-size:1.1rem; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
-  button.relay-btn.on { background:#4CAF50; color:white; }
-  button.relay-btn.off { background:#f44336; color:white; }
-  button.relay-btn:hover { opacity:0.9; }
+body { font-family: Arial; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+#login-container { background:white; padding:50px; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.15); text-align:center; }
+#login-container h1 { margin-bottom:30px; font-size:2rem; color:#333; }
+#googleSignInBtn { background:#4285F4; color:white; border:none; border-radius:8px; font-size:1.1rem; padding:14px 30px; cursor:pointer; }
+#googleSignInBtn:hover { opacity:0.9; }
+#dashboard { display:none; flex-direction:column; align-items:center; padding:20px; width:100%; max-width:450px; }
+#user-info { margin-bottom:20px; font-size:1.1rem; color:#555; text-align:center; }
+#logoutBtn { margin-bottom:20px; padding:10px 24px; font-size:1rem; border:none; border-radius:8px; background:#f44336; color:white; cursor:pointer; }
+#logoutBtn:hover { opacity:0.9; }
+h1 { margin-bottom:10px; font-size:2.2rem; color:#333; }
+#datetime { margin-bottom:25px; font-size:1.1rem; color:#555; background:white; padding:10px 20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+.relay-card { background:white; padding:25px 50px; margin:15px; border-radius:16px; box-shadow:0 6px 16px rgba(0,0,0,0.12); display:flex; align-items:center; justify-content:space-between; width:100%; max-width:350px; }
+.relay-card.active { border-left:8px solid #4CAF50; }
+.relay-info { display:flex; align-items:center; gap:20px; }
+.relay-info img { width:60px; height:60px; border-radius:10px; object-fit:contain; }
+button.relay-btn { padding:14px 28px; font-size:1.1rem; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+button.relay-btn.on { background:#4CAF50; color:white; }
+button.relay-btn.off { background:#f44336; color:white; }
+button.relay-btn:hover { opacity:0.9; }
 </style>
 </head>
 <body>
@@ -87,7 +87,6 @@
   const loginContainer = document.getElementById("login-container");
   const dashboard = document.getElementById("dashboard");
   const userInfo = document.getElementById("user-info");
-
   const provider = new firebase.auth.GoogleAuthProvider();
 
   // ===== Sign in with Google =====
@@ -96,8 +95,7 @@
       const result = await auth.signInWithPopup(provider);
       const user = result.user;
 
-      // Save user info if not exists
-      db.ref(`/Users/${user.uid}`).update({
+      await db.ref(`/Users/${user.uid}`).update({
         email: user.email,
         displayName: user.displayName,
         lastLogin: Date.now(),
@@ -105,31 +103,29 @@
       });
     } catch (err) {
       console.error("Login error:", err);
-      alert("Login failed! Check console for details.");
+      alert("Login failed! Check console.");
     }
   });
 
-  // ===== Auth state listener =====
+  // ===== Auth State Listener =====
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       try {
         const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
         if (bannedSnap.val()) {
-          alert("You are banned from accessing this dashboard.");
+          alert("You are banned.");
           await auth.signOut();
           return;
         }
 
+        // Show dashboard immediately
         loginContainer.style.display = "none";
         dashboard.style.display = "flex";
         userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
 
-        const devicesSnap = await db.ref("/Devices").get();
-        if (devicesSnap.exists()) {
-          loadDevices();
-        } else {
-          alert("No devices found in Firebase.");
-        }
+        // Load devices (even if empty)
+        loadDevices();
+
       } catch (err) {
         console.error("Dashboard load error:", err);
         loginContainer.style.display = "flex";
@@ -192,7 +188,7 @@
         btn.textContent = state ? "ON" : "OFF";
         btn.className = `relay-btn ${state?'on':'off'}`;
         relayCards[i].classList.toggle("active", state);
-        img.src = state?"Light on.png":"Light off.png";
+        img.src = state ? "Light on.png" : "Light off.png";
       });
       relayRefs.push({ ref, listener });
     }
@@ -225,7 +221,7 @@
   }
   setInterval(updateDateTime,1000);
   updateDateTime();
-</script>
 
+</script>
 </body>
 </html>
