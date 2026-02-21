@@ -21,7 +21,6 @@
     margin: 0;
   }
 
-  /* Login page */
   #login-container {
     background: white;
     padding: 50px;
@@ -49,7 +48,6 @@
 
   #googleSignInBtn:hover { opacity: 0.9; }
 
-  /* Dashboard page */
   #dashboard {
     display: none;
     flex-direction: column;
@@ -100,13 +98,11 @@
 </head>
 <body>
 
-<!-- Login Page -->
 <div id="login-container">
   <h1>Login with Google</h1>
   <button id="googleSignInBtn">Sign in with Gmail</button>
 </div>
 
-<!-- Dashboard -->
 <div id="dashboard">
   <div id="user-info"></div>
   <button id="logoutBtn">Logout</button>
@@ -119,7 +115,6 @@
     <select id="deviceSelect"></select>
   </div>
 
-  <!-- Relay cards -->
   <div class="relay-card" id="relay1-card">
     <div class="relay-info">
       <img id="relay1-img" src="Light off.png" alt="Light 1">
@@ -154,13 +149,14 @@
   // ===== Firebase Config =====
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
-    authDomain: "PpK33xO1LzOz3EsBjBXc4TX8l9G2.firebaseapp.com",
+    authDomain: "data-logging-f2cfe.firebaseapp.com", // FIXED: Firebase project domain
     databaseURL: "https://data-logging-f2cfe-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "PpK33xO1LzOz3EsBjBXc4TX8l9G2",
-    storageBucket: "PpK33xO1LzOz3EsBjBXc4TX8l9G2.appspot.com",
+    projectId: "data-logging-f2cfe",
+    storageBucket: "data-logging-f2cfe.appspot.com",
     messagingSenderId: "YOUR_SENDER_ID",
     appId: "YOUR_APP_ID"
   };
+
   const app = firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.database();
@@ -171,14 +167,9 @@
 
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // Redirect Sign-In (works on GitHub Pages)
+  // ===== Sign in with Popup =====
   document.getElementById("googleSignInBtn").addEventListener("click", () => {
-    auth.signInWithRedirect(provider);
-  });
-
-  // Handle redirect result
-  auth.getRedirectResult().then(result => {
-    if (result.user) {
+    auth.signInWithPopup(provider).then(result => {
       const user = result.user;
       db.ref(`/Users/${user.uid}`).set({
         email: user.email,
@@ -186,10 +177,10 @@
         createdAt: Date.now(),
         banned: false
       });
-    }
-  }).catch(err => console.error(err));
+    }).catch(err => console.error(err));
+  });
 
-  // Auth state listener
+  // ===== Auth state listener =====
   auth.onAuthStateChanged(user => {
     if (user) {
       db.ref(`/Users/${user.uid}/banned`).get().then(snapshot => {
@@ -200,7 +191,7 @@
           loginContainer.style.display = "none";
           dashboard.style.display = "flex";
           userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
-          loadDevices(); // init relays
+          loadDevices();
         }
       });
     } else {
@@ -211,7 +202,7 @@
 
   document.getElementById("logoutBtn").addEventListener("click", () => auth.signOut());
 
-  // ===== Relay Dashboard Code =====
+  // ===== Relay Dashboard =====
   const relayCards = {
     1: document.getElementById("relay1-card"),
     2: document.getElementById("relay2-card"),
