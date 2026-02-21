@@ -47,9 +47,7 @@
     transition: 0.3s;
   }
 
-  #googleSignInBtn:hover {
-    opacity: 0.9;
-  }
+  #googleSignInBtn:hover { opacity: 0.9; }
 
   /* Dashboard page */
   #dashboard {
@@ -57,12 +55,15 @@
     flex-direction: column;
     align-items: center;
     padding: 20px;
+    width: 100%;
+    max-width: 450px;
   }
 
   #user-info {
     margin-bottom: 20px;
     font-size: 1.1rem;
     color: #555;
+    text-align: center;
   }
 
   #logoutBtn {
@@ -77,13 +78,11 @@
     transition: 0.2s;
   }
 
-  #logoutBtn:hover {
-    opacity: 0.9;
-  }
+  #logoutBtn:hover { opacity: 0.9; }
 
   h1 { margin-bottom: 10px; font-size: 2.2rem; color: #333; }
   #datetime { margin-bottom: 25px; font-size: 1.1rem; color: #555; background: white; padding: 10px 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-  .relay-card { background: white; padding: 25px 50px; margin: 15px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: space-between; width: 350px; transition: 0.3s; }
+  .relay-card { background: white; padding: 25px 50px; margin: 15px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 350px; transition: 0.3s; }
   .relay-card.active { border-left: 8px solid #4CAF50; }
   .relay-info { display: flex; align-items: center; gap: 20px; }
   .relay-info img { width: 60px; height: 60px; border-radius: 10px; object-fit: contain; transition: 0.2s; }
@@ -155,10 +154,10 @@
   // ===== Firebase Config =====
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    authDomain: "PpK33xO1LzOz3EsBjBXc4TX8l9G2.firebaseapp.com",
     databaseURL: "https://data-logging-f2cfe-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    projectId: "PpK33xO1LzOz3EsBjBXc4TX8l9G2",
+    storageBucket: "PpK33xO1LzOz3EsBjBXc4TX8l9G2.appspot.com",
     messagingSenderId: "YOUR_SENDER_ID",
     appId: "YOUR_APP_ID"
   };
@@ -170,23 +169,27 @@
   const dashboard = document.getElementById("dashboard");
   const userInfo = document.getElementById("user-info");
 
-  // Google Sign-In
   const provider = new firebase.auth.GoogleAuthProvider();
+
+  // Redirect Sign-In (works on GitHub Pages)
   document.getElementById("googleSignInBtn").addEventListener("click", () => {
-    auth.signInWithPopup(provider)
-      .then(result => {
-        const user = result.user;
-        db.ref(`/Users/${user.uid}`).set({
-          email: user.email,
-          displayName: user.displayName,
-          createdAt: Date.now(),
-          banned: false
-        });
-      })
-      .catch(err => console.error("Sign-in error:", err));
+    auth.signInWithRedirect(provider);
   });
 
-  // Auth State Listener
+  // Handle redirect result
+  auth.getRedirectResult().then(result => {
+    if (result.user) {
+      const user = result.user;
+      db.ref(`/Users/${user.uid}`).set({
+        email: user.email,
+        displayName: user.displayName,
+        createdAt: Date.now(),
+        banned: false
+      });
+    }
+  }).catch(err => console.error(err));
+
+  // Auth state listener
   auth.onAuthStateChanged(user => {
     if (user) {
       db.ref(`/Users/${user.uid}/banned`).get().then(snapshot => {
@@ -197,7 +200,7 @@
           loginContainer.style.display = "none";
           dashboard.style.display = "flex";
           userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
-          loadDevices(); // initialize relay dashboard after login
+          loadDevices(); // init relays
         }
       });
     } else {
@@ -206,9 +209,7 @@
     }
   });
 
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    auth.signOut();
-  });
+  document.getElementById("logoutBtn").addEventListener("click", () => auth.signOut());
 
   // ===== Relay Dashboard Code =====
   const relayCards = {
