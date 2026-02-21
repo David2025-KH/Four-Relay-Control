@@ -90,12 +90,13 @@
 
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // ===== Sign in with Popup =====
+  // ===== Sign in with Google =====
   document.getElementById("googleSignInBtn").addEventListener("click", async () => {
     try {
       const result = await auth.signInWithPopup(provider);
       const user = result.user;
-      // Save user info in DB if not exists
+
+      // Save user info if not exists
       db.ref(`/Users/${user.uid}`).update({
         email: user.email,
         displayName: user.displayName,
@@ -109,19 +110,31 @@
   });
 
   // ===== Auth state listener =====
-  auth.onAuthStateChanged(user => {
+  auth.onAuthStateChanged(async (user) => {
     if (user) {
-      db.ref(`/Users/${user.uid}/banned`).get().then(snapshot => {
-        if (snapshot.val()) {
+      try {
+        const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
+        if (bannedSnap.val()) {
           alert("You are banned from accessing this dashboard.");
-          auth.signOut();
-        } else {
-          loginContainer.style.display = "none";
-          dashboard.style.display = "flex";
-          userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
-          loadDevices();
+          await auth.signOut();
+          return;
         }
-      });
+
+        loginContainer.style.display = "none";
+        dashboard.style.display = "flex";
+        userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
+
+        const devicesSnap = await db.ref("/Devices").get();
+        if (devicesSnap.exists()) {
+          loadDevices();
+        } else {
+          alert("No devices found in Firebase.");
+        }
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        loginContainer.style.display = "flex";
+        dashboard.style.display = "none";
+      }
     } else {
       loginContainer.style.display = "flex";
       dashboard.style.display = "none";
