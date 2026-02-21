@@ -93,13 +93,20 @@ document.getElementById("googleSignInBtn").addEventListener("click", async () =>
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
 
-    // Save user info if not exists
-    await db.ref(`/Users/${user.uid}`).update({
-      email: user.email,
-      displayName: user.displayName,
-      lastLogin: Date.now(),
-      banned: false
-    });
+    // Only create new user if not exists
+    const userRef = db.ref(`/Users/${user.uid}`);
+    const snapshot = await userRef.get();
+    if (!snapshot.exists()) {
+      await userRef.set({
+        email: user.email,
+        displayName: user.displayName,
+        lastLogin: Date.now(),
+        banned: false
+      });
+    } else {
+      await userRef.update({ lastLogin: Date.now() });
+    }
+
   } catch(err){
     console.error("Login error:", err);
     alert("Login failed! Check console.");
@@ -111,7 +118,8 @@ auth.onAuthStateChanged(async (user) => {
   if(user){
     try{
       const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
-      if(bannedSnap.val()){
+      const isBanned = bannedSnap.exists() ? bannedSnap.val() : false; // default false
+      if(isBanned){
         alert("You are banned.");
         await auth.signOut();
         return;
@@ -168,8 +176,8 @@ function loadDevices(){
 }
 
 document.getElementById("deviceSelect").addEventListener("change", e=>{
+  removeRelayListeners(); // remove old listeners first
   selectedDevice = e.target.value;
-  removeRelayListeners();
   setupRelayListeners(selectedDevice);
 });
 
@@ -215,7 +223,7 @@ function toggleRelay(relayNum){
 function updateDateTime(){
   const now = new Date();
   const options={weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'};
-  document.getElementById("datetime").textContent = now.toLocaleDateString('en-US', options);
+  document.getElementById("datetime").textContent = now.toLocaleString('en-US', options);
 }
 setInterval(updateDateTime,1000);
 updateDateTime();
