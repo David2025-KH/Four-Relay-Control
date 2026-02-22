@@ -11,34 +11,48 @@
 
 <style>
 body {
-  font-family: Arial;
+  font-family: 'Segoe UI', Arial, sans-serif;
   background: linear-gradient(135deg,#4e73df,#1cc88a);
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
   margin:0;
+  transition: background 1s ease;
 }
 
 #login-container {
   background:white;
   padding:50px;
-  border-radius:18px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+  border-radius:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.3);
   text-align:center;
   width:90%;
   max-width:420px;
+  transform: translateY(-50px);
+  opacity:0;
+  animation: fadeIn 0.8s forwards;
+}
+
+@keyframes fadeIn {
+  to { transform: translateY(0); opacity:1; }
 }
 
 #googleSignInBtn {
-  background:#4285F4;
+  background: linear-gradient(90deg,#4285F4,#34a853);
   color:white;
   border:none;
-  border-radius:8px;
+  border-radius:12px;
   font-size:1.1rem;
-  padding:14px 30px;
+  padding:16px 30px;
   cursor:pointer;
   width:100%;
+  transition: all 0.3s;
+}
+
+#googleSignInBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
 
 #dashboard {
@@ -47,37 +61,109 @@ body {
   align-items:center;
   padding:20px;
   width:100%;
-  max-width:450px;
+  max-width:480px;
 }
 
+#user-info {
+  font-size:1rem;
+  margin-bottom:20px;
+  color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,0.4);
+}
+
+#logoutBtn {
+  padding:10px 24px;
+  font-size:1rem;
+  border:none;
+  border-radius:12px;
+  background:#f44336;
+  color:white;
+  cursor:pointer;
+  margin-bottom:20px;
+  transition: 0.3s;
+}
+
+#logoutBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+}
+
+#datetime {
+  font-size:1rem;
+  margin-bottom:20px;
+  color:white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+select#deviceSelect {
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  outline:none;
+  font-size:1rem;
+  margin-bottom:20px;
+  cursor:pointer;
+  background: rgba(255,255,255,0.95);
+  transition: 0.3s;
+}
+select#deviceSelect:hover {
+  transform: scale(1.02);
+}
+
+/* Relay Cards */
 .relay-card {
-  background:white;
+  background: rgba(255,255,255,0.95);
   padding:20px 40px;
   margin:10px;
-  border-radius:14px;
-  box-shadow:0 6px 14px rgba(0,0,0,0.15);
+  border-radius:16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
   display:flex;
   align-items:center;
   justify-content:space-between;
   width:100%;
   max-width:350px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.relay-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+}
+.relay-card.active {
+  border-left:10px solid #4CAF50;
+  animation: pulse 1s infinite;
 }
 
-.relay-card.active {
-  border-left:8px solid #4CAF50;
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 button.relay-btn {
-  padding:10px 22px;
+  padding:12px 28px;
   font-size:1rem;
   border:none;
-  border-radius:8px;
+  border-radius:12px;
   cursor:pointer;
   font-weight:bold;
+  transition: all 0.3s;
 }
 
-button.relay-btn.on { background:#4CAF50; color:white; }
-button.relay-btn.off { background:#f44336; color:white; }
+button.relay-btn.on {
+  background: linear-gradient(90deg,#4CAF50,#81C784);
+  color:white;
+  box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+}
+
+button.relay-btn.off {
+  background: linear-gradient(90deg,#f44336,#e57373);
+  color:white;
+  box-shadow: 0 5px 15px rgba(244,67,54,0.4);
+}
+
+button.relay-btn:hover {
+  transform: scale(1.05);
+}
+
 </style>
 </head>
 
@@ -91,11 +177,11 @@ button.relay-btn.off { background:#f44336; color:white; }
 <div id="dashboard">
   <div id="user-info"></div>
   <button id="logoutBtn">Logout</button>
-  <h2>Relay Control Dashboard</h2>
+  <h2 style="color:white;">Relay Control Dashboard</h2>
   <div id="datetime"></div>
 
-  <div style="margin-bottom:15px;">
-    <label>Select Device:</label>
+  <div>
+    <label style="color:white;">Select Device:</label>
     <select id="deviceSelect"></select>
   </div>
 
@@ -121,6 +207,7 @@ button.relay-btn.off { background:#f44336; color:white; }
 </div>
 
 <script>
+// ====== Firebase Config & Init ======
 const firebaseConfig = {
   apiKey: "AIzaSyDjzlI-47-q8zakU2W3MVFRxGqXyFYvnXE",
   authDomain: "data-logging-f2cfe.firebaseapp.com",
@@ -178,27 +265,18 @@ document.getElementById("googleSignInBtn").addEventListener("click", async () =>
 /* ===== AUTH LISTENER ===== */
 auth.onAuthStateChanged(async (user) => {
   if(user){
-    try{
-      const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
-      const isBanned = bannedSnap.exists() ? bannedSnap.val() : false;
-
-      if(isBanned){
-        alert("You are banned.");
-        await auth.signOut();
-        return;
-      }
-
-      loginContainer.style.display = "none";
-      dashboard.style.display = "flex";
-      userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
-
-      loadDevices();
-
-    }catch(err){
-      console.error("Dashboard load error:", err);
-      loginContainer.style.display = "flex";
-      dashboard.style.display = "none";
+    const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
+    if(bannedSnap.val() === true){
+      alert("You are banned.");
+      await auth.signOut();
+      return;
     }
+
+    loginContainer.style.display = "none";
+    dashboard.style.display = "flex";
+    userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
+
+    loadDevices();
   } else {
     loginContainer.style.display = "flex";
     dashboard.style.display = "none";
@@ -277,8 +355,7 @@ function toggleRelay(relayNum){
   const path = `/Devices/${selectedDevice}/relays/Relay${relayNum}`;
   db.ref(path).get().then(snapshot=>{
     const current = snapshot.val() ?? 0;
-    const newState = current === 1 ? 0 : 1;
-    db.ref(path).set(newState);
+    db.ref(path).set(current === 1 ? 0 : 1);
   });
 }
 
@@ -286,13 +363,8 @@ function toggleRelay(relayNum){
 function updateDateTime(){
   const now = new Date();
   const options={
-    weekday:'long',
-    year:'numeric',
-    month:'long',
-    day:'numeric',
-    hour:'2-digit',
-    minute:'2-digit',
-    second:'2-digit'
+    weekday:'long', year:'numeric', month:'long', day:'numeric',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
   };
   document.getElementById("datetime").textContent =
     now.toLocaleString('en-US', options);
@@ -300,7 +372,7 @@ function updateDateTime(){
 
 setInterval(updateDateTime,1000);
 updateDateTime();
-
 </script>
+
 </body>
 </html>
