@@ -12,7 +12,7 @@
 
 <style>
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   background: linear-gradient(135deg,#4e73df,#1cc88a);
   display:flex;
   justify-content:center;
@@ -40,7 +40,6 @@ body {
 #login-container p {
   color:#666;
   margin-bottom:30px;
-  font-size:1rem;
 }
 
 #googleSignInBtn {
@@ -71,9 +70,8 @@ body {
 }
 
 #user-info {
-  margin-bottom:15px;
+  margin-bottom:20px;
   font-size:1rem;
-  color:#444;
   text-align:center;
 }
 
@@ -88,18 +86,9 @@ body {
   cursor:pointer;
 }
 
-#logoutBtn:hover { opacity:0.9; }
+h2 { margin-bottom:10px; }
 
-h2 {
-  margin-bottom:10px;
-  color:#333;
-}
-
-#datetime {
-  margin-bottom:20px;
-  font-size:1rem;
-  color:#555;
-}
+#datetime { margin-bottom:20px; }
 
 .relay-card {
   background:white;
@@ -112,7 +101,6 @@ h2 {
   justify-content:space-between;
   width:100%;
   max-width:350px;
-  transition:0.3s;
 }
 
 .relay-card.active {
@@ -141,22 +129,18 @@ button.relay-btn {
 
 button.relay-btn.on { background:#4CAF50; color:white; }
 button.relay-btn.off { background:#f44336; color:white; }
-
-button.relay-btn:hover { opacity:0.9; }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="login-container">
   <h1>Welcome to Smart Home Control</h1>
-  <p>Experience the future of living.  
+  <p>Experience the future of living.<br>
   Control your home anytime, anywhere.</p>
   <button id="googleSignInBtn">Sign in with Google</button>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboard">
   <div id="user-info"></div>
   <button id="logoutBtn">Logout</button>
@@ -169,6 +153,7 @@ button.relay-btn:hover { opacity:0.9; }
     <select id="deviceSelect"></select>
   </div>
 
+  <!-- 4 Relays -->
   <div class="relay-card" id="relay1-card">
     <div class="relay-info">
       <img id="relay1-img" src="Light off.png">
@@ -204,10 +189,13 @@ button.relay-btn:hover { opacity:0.9; }
 
 <script>
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "YOUR_DB_URL",
-  projectId: "YOUR_PROJECT_ID",
+  apiKey: "AIzaSyDjzlI-47-q8zakU2W3MVFRxGqXyFYvnXE",
+  authDomain: "data-logging-f2cfe.firebaseapp.com",
+  databaseURL: "https://data-logging-f2cfe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "data-logging-f2cfe",
+  storageBucket: "data-logging-f2cfe.firebasestorage.app",
+  messagingSenderId: "899288602117",
+  appId: "1:899288602117:web:2f41f71e7eb8dfe54bee6c"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -222,53 +210,125 @@ const userInfo = document.getElementById("user-info");
 let selectedDevice = null;
 let relayRefs = [];
 
-// Sign In
+const relayCards = {
+  1: document.getElementById("relay1-card"),
+  2: document.getElementById("relay2-card"),
+  3: document.getElementById("relay3-card"),
+  4: document.getElementById("relay4-card")
+};
+
+/* SIGN IN */
 document.getElementById("googleSignInBtn").addEventListener("click", async () => {
   try {
-    await auth.signInWithPopup(provider);
+    const result = await auth.signInWithPopup(provider);
+    const user = result.user;
+
+    const userRef = db.ref(`/Users/${user.uid}`);
+    const snapshot = await userRef.get();
+
+    if (!snapshot.exists()) {
+      await userRef.set({
+        email: user.email,
+        displayName: user.displayName,
+        lastLogin: Date.now(),
+        banned: false
+      });
+    } else {
+      await userRef.update({ lastLogin: Date.now() });
+    }
+
   } catch(err){
-    alert("Login failed. Check console.");
-    console.error(err);
+    console.error("Login error:", err);
+    alert("Login failed! Check console.");
   }
 });
 
-// Auth State
-auth.onAuthStateChanged(user=>{
+/* AUTH STATE */
+auth.onAuthStateChanged(async (user) => {
   if(user){
+    const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
+    if(bannedSnap.val() === true){
+      alert("You are banned.");
+      await auth.signOut();
+      return;
+    }
+
     loginContainer.style.display="none";
     dashboard.style.display="flex";
-    userInfo.textContent=`Logged in as: ${user.displayName}`;
+    userInfo.textContent=`Logged in as: ${user.displayName} (${user.email})`;
+
     loadDevices();
   } else {
-    loginContainer.style.display="block";
+    loginContainer.style.display="flex";
     dashboard.style.display="none";
   }
 });
 
 document.getElementById("logoutBtn").addEventListener("click", ()=>auth.signOut());
 
-// Relay Toggle
+/* LOAD DEVICES */
+function loadDevices(){
+  const select = document.getElementById("deviceSelect");
+
+  db.ref("/Devices").on("value", snapshot=>{
+    const devices = snapshot.val() || {};
+    select.innerHTML="";
+
+    for(const dev in devices){
+      const opt=document.createElement("option");
+      opt.value=dev;
+      opt.textContent=dev;
+      select.appendChild(opt);
+    }
+
+    selectedDevice=select.value;
+    setupRelayListeners(selectedDevice);
+  });
+}
+
+document.getElementById("deviceSelect").addEventListener("change", e=>{
+  selectedDevice=e.target.value;
+  setupRelayListeners(selectedDevice);
+});
+
+/* RELAYS */
 for(let i=1;i<=4;i++){
-  document.getElementById(`relay${i}-btn`).addEventListener("click",()=>toggleRelay(i));
+  document.getElementById(`relay${i}-btn`)
+    .addEventListener("click",()=>toggleRelay(i));
+}
+
+function setupRelayListeners(deviceID){
+  for(let i=1;i<=4;i++){
+    const ref=db.ref(`/Devices/${deviceID}/relays/Relay${i}`);
+    ref.on("value", snapshot=>{
+      const state=snapshot.val()===1;
+      const btn=document.getElementById(`relay${i}-btn`);
+      const img=document.getElementById(`relay${i}-img`);
+
+      btn.textContent=state?"ON":"OFF";
+      btn.className=`relay-btn ${state?'on':'off'}`;
+      relayCards[i].classList.toggle("active",state);
+      img.src=state?"Light on.png":"Light off.png";
+    });
+  }
 }
 
 function toggleRelay(num){
   if(!selectedDevice) return;
-  const path=`/Devices/${selectedDevice}/relays/Relay${num}`;
-  db.ref(path).get().then(snap=>{
-    const newState = snap.val()===1?0:1;
-    db.ref(path).set(newState);
+  const ref=db.ref(`/Devices/${selectedDevice}/relays/Relay${num}`);
+  ref.get().then(snap=>{
+    ref.set(snap.val()===1?0:1);
   });
 }
 
-// Date Time
+/* TIME */
 function updateDateTime(){
-  document.getElementById("datetime").textContent =
+  document.getElementById("datetime").textContent=
     new Date().toLocaleString();
 }
 setInterval(updateDateTime,1000);
 updateDateTime();
-</script>
 
+</script>
 </body>
 </html>
