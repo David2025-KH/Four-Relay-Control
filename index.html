@@ -10,27 +10,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body {
+html, body {
+  height: 100%;
+  margin: 0;
   font-family: 'Segoe UI', Arial, sans-serif;
+  overflow-x: hidden; /* prevent horizontal scroll */
   background: linear-gradient(135deg,#4e73df,#1cc88a);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  margin:0;
-  transition: background 1s ease;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #login-container {
-  background:white;
-  padding:50px;
-  border-radius:20px;
-  box-shadow:0 15px 40px rgba(0,0,0,0.3);
-  text-align:center;
-  width:90%;
-  max-width:420px;
+  background: white;
+  padding: 50px;
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  text-align: center;
+  width: 90%;
+  max-width: 420px;
   transform: translateY(-50px);
-  opacity:0;
+  opacity: 0;
   animation: fadeIn 0.8s forwards;
 }
 
@@ -56,12 +59,24 @@ body {
 }
 
 #dashboard {
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  padding:20px;
-  width:100%;
-  max-width:480px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 480px;
+  height: 100vh; /* fill screen */
+  overflow-y: auto; /* allow vertical scrolling */
+  box-sizing: border-box;
+}
+
+/* Scrollbar styling */
+#dashboard::-webkit-scrollbar {
+  width: 8px;
+}
+#dashboard::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
 }
 
 #user-info {
@@ -163,7 +178,6 @@ button.relay-btn.off {
 button.relay-btn:hover {
   transform: scale(1.05);
 }
-
 </style>
 </head>
 
@@ -204,7 +218,6 @@ button.relay-btn:hover {
     <button class="relay-btn off" id="relay4-btn">OFF</button>
   </div>
 
-  <!-- Logout at bottom -->
   <button id="logoutBtn">Logout</button>
 </div>
 
