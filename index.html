@@ -153,7 +153,6 @@ button.relay-btn.off { background:#f44336; color:white; }
     <select id="deviceSelect"></select>
   </div>
 
-  <!-- 4 Relays -->
   <div class="relay-card" id="relay1-card">
     <div class="relay-info">
       <img id="relay1-img" src="Light off.png">
@@ -266,12 +265,14 @@ auth.onAuthStateChanged(async (user) => {
 
 document.getElementById("logoutBtn").addEventListener("click", ()=>auth.signOut());
 
-/* LOAD DEVICES */
+/* LOAD DEVICES FIXED */
 function loadDevices(){
   const select = document.getElementById("deviceSelect");
 
   db.ref("/Devices").on("value", snapshot=>{
     const devices = snapshot.val() || {};
+    const prevSelected = select.value;
+
     select.innerHTML="";
 
     for(const dev in devices){
@@ -281,25 +282,37 @@ function loadDevices(){
       select.appendChild(opt);
     }
 
-    selectedDevice=select.value;
+    if(devices[prevSelected]){
+      select.value = prevSelected;
+    } else {
+      select.value = select.options[0]?.value;
+    }
+
+    selectedDevice = select.value;
+
+    removeRelayListeners();
     setupRelayListeners(selectedDevice);
   });
 }
 
 document.getElementById("deviceSelect").addEventListener("change", e=>{
   selectedDevice=e.target.value;
+  removeRelayListeners();
   setupRelayListeners(selectedDevice);
 });
 
-/* RELAYS */
-for(let i=1;i<=4;i++){
-  document.getElementById(`relay${i}-btn`)
-    .addEventListener("click",()=>toggleRelay(i));
+function removeRelayListeners(){
+  relayRefs.forEach(ref=>ref.off());
+  relayRefs=[];
 }
 
 function setupRelayListeners(deviceID){
+  if(!deviceID) return;
+
   for(let i=1;i<=4;i++){
     const ref=db.ref(`/Devices/${deviceID}/relays/Relay${i}`);
+    relayRefs.push(ref);
+
     ref.on("value", snapshot=>{
       const state=snapshot.val()===1;
       const btn=document.getElementById(`relay${i}-btn`);
@@ -315,20 +328,25 @@ function setupRelayListeners(deviceID){
 
 function toggleRelay(num){
   if(!selectedDevice) return;
+
   const ref=db.ref(`/Devices/${selectedDevice}/relays/Relay${num}`);
   ref.get().then(snap=>{
     ref.set(snap.val()===1?0:1);
   });
 }
 
-/* TIME */
+for(let i=1;i<=4;i++){
+  document.getElementById(`relay${i}-btn`)
+    .addEventListener("click",()=>toggleRelay(i));
+}
+
 function updateDateTime(){
   document.getElementById("datetime").textContent=
     new Date().toLocaleString();
 }
 setInterval(updateDateTime,1000);
 updateDateTime();
-
 </script>
+
 </body>
 </html>
