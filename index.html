@@ -10,25 +10,31 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-/* ===== BODY & CONTAINER ===== */
-body {
+html, body {
+  height: 100%;
+  margin: 0;
   font-family: 'Segoe UI', Arial, sans-serif;
+  overflow-x: hidden; /* prevent horizontal scroll */
   background: linear-gradient(135deg,#4e73df,#1cc88a);
-  margin:0;
-  height:100vh;
-  overflow:hidden;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* push content down */
+  padding-top: 60px; /* safe distance from top */
 }
 
 #login-container {
-  background:white;
-  padding:50px;
-  border-radius:20px;
-  box-shadow:0 15px 40px rgba(0,0,0,0.3);
-  text-align:center;
-  width:90%;
-  max-width:420px;
-  transform: translateY(-50px);
-  opacity:0;
+  background: white;
+  padding: 50px 20px;
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  text-align: center;
+  width: 90%;
+  max-width: 420px;
+  transform: translateY(0px);
+  opacity: 0;
   animation: fadeIn 0.8s forwards;
 }
 
@@ -47,70 +53,64 @@ body {
   width:100%;
   transition: all 0.3s;
 }
+
 #googleSignInBtn:hover {
   transform: scale(1.05);
   box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
 
-/* ===== DASHBOARD ===== */
 #dashboard {
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  padding:10px 20px;
-  width:100%;
-  max-width:480px;
-  height:100vh;
-  overflow-y:auto;
-  box-sizing:border-box;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px 20px; /* extra bottom padding for scroll */
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh; /* always fill screen */
+  overflow-y: auto; /* vertical scroll only */
+  box-sizing: border-box;
 }
 
-/* ===== HEADER & SMART LIGHT ===== */
-#dashboard-header {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:15px;
+/* Scrollbar styling */
+#dashboard::-webkit-scrollbar {
+  width: 8px;
+}
+#dashboard::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
 }
 
-#status-light {
-  width:16px;
-  height:16px;
-  border-radius:50%;
-  background:#4CAF50;
-  box-shadow:0 0 10px #4CAF50;
-  animation:pulse-light 1.5s infinite alternate;
-}
-
-@keyframes pulse-light {
-  0% { box-shadow:0 0 5px #4CAF50; transform: scale(1); }
-  50% { box-shadow:0 0 15px #4CAF50; transform: scale(1.2); }
-  100% { box-shadow:0 0 5px #4CAF50; transform: scale(1); }
-}
-
-h2#dashboard-title {
-  color:white;
-  margin:0;
-  font-size:1.6rem;
-}
-
-/* ===== USER INFO ===== */
 #user-info {
   font-size:1rem;
-  margin-bottom:10px;
-  color:white;
+  margin-bottom:20px;
+  color:#fff;
   text-shadow:0 1px 3px rgba(0,0,0,0.4);
 }
 
-/* ===== DATETIME ===== */
-#datetime {
+#logoutBtn {
+  padding:12px 28px;
   font-size:1rem;
-  margin-bottom:15px;
+  border:none;
+  border-radius:12px;
+  background:#f44336;
   color:white;
-  text-shadow:0 1px 4px rgba(0,0,0,0.4);
+  cursor:pointer;
+  margin-top:20px;
+  transition: 0.3s;
 }
 
-/* ===== DEVICE SELECT ===== */
+#logoutBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+}
+
+#datetime {
+  font-size:1rem;
+  margin-bottom:20px;
+  color:white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
 select#deviceSelect {
   padding:10px 14px;
   border-radius:10px;
@@ -120,41 +120,40 @@ select#deviceSelect {
   margin-bottom:20px;
   cursor:pointer;
   background: rgba(255,255,255,0.95);
-  transition:0.3s;
-  width:100%;
+  transition: 0.3s;
 }
 select#deviceSelect:hover {
   transform: scale(1.02);
 }
 
-/* ===== RELAY CARDS ===== */
+/* Relay Cards */
 .relay-card {
   background: rgba(255,255,255,0.95);
-  padding:20px 30px;
-  margin:10px 0;
+  padding:20px 40px;
+  margin:10px;
   border-radius:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.25);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
   display:flex;
   align-items:center;
   justify-content:space-between;
   width:100%;
-  max-width:400px;
+  max-width:350px;
   transition: transform 0.3s, box-shadow 0.3s;
 }
 .relay-card:hover {
   transform: translateY(-5px);
-  box-shadow:0 10px 25px rgba(0,0,0,0.35);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
 }
 .relay-card.active {
   border-left:10px solid #4CAF50;
-  animation:pulse 1s infinite;
-}
-@keyframes pulse {
-  0%,100%{ transform: scale(1);}
-  50%{ transform: scale(1.02);}
+  animation: pulse 1s infinite;
 }
 
-/* ===== RELAY BUTTONS ===== */
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
 button.relay-btn {
   padding:12px 28px;
   font-size:1rem;
@@ -162,37 +161,39 @@ button.relay-btn {
   border-radius:12px;
   cursor:pointer;
   font-weight:bold;
-  transition:all 0.3s;
+  transition: all 0.3s;
 }
+
 button.relay-btn.on {
   background: linear-gradient(90deg,#4CAF50,#81C784);
   color:white;
-  box-shadow:0 5px 15px rgba(76,175,80,0.4);
+  box-shadow: 0 5px 15px rgba(76,175,80,0.4);
 }
+
 button.relay-btn.off {
   background: linear-gradient(90deg,#f44336,#e57373);
   color:white;
-  box-shadow:0 5px 15px rgba(244,67,54,0.4);
+  box-shadow: 0 5px 15px rgba(244,67,54,0.4);
 }
+
 button.relay-btn:hover {
   transform: scale(1.05);
 }
 
-/* ===== LOGOUT BUTTON BOTTOM ===== */
-#logoutBtn {
-  padding:12px 28px;
-  font-size:1rem;
-  border:none;
-  border-radius:12px;
-  background:#f44336;
-  color:white;
-  cursor:pointer;
-  margin:20px 0 30px 0;
-  transition:0.3s;
-}
-#logoutBtn:hover {
-  transform: scale(1.05);
-  box-shadow:0 6px 15px rgba(0,0,0,0.25);
+/* Mobile adjustment for small screens */
+@media screen and (max-width: 400px) {
+  body {
+    padding-top: 80px;
+  }
+  #login-container, #dashboard {
+    padding: 40px 15px 60px 15px;
+  }
+  .relay-card {
+    padding: 16px 20px;
+  }
+  button.relay-btn {
+    padding: 10px 20px;
+  }
 }
 </style>
 </head>
@@ -206,10 +207,7 @@ button.relay-btn:hover {
 
 <div id="dashboard">
   <div id="user-info"></div>
-  <div id="dashboard-header">
-    <div id="status-light"></div>
-    <h2 id="dashboard-title">Relay Control Dashboard</h2>
-  </div>
+  <h2 style="color:white;">Relay Control Dashboard</h2>
   <div id="datetime"></div>
 
   <div>
@@ -276,38 +274,50 @@ document.getElementById("googleSignInBtn").addEventListener("click", async () =>
   try {
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
+
     const userRef = db.ref(`/Users/${user.uid}`);
     const snapshot = await userRef.get();
 
-    if(!snapshot.exists()){
-      await userRef.set({ email:user.email, displayName:user.displayName, lastLogin:Date.now(), banned:false });
+    if (!snapshot.exists()) {
+      await userRef.set({
+        email: user.email,
+        displayName: user.displayName,
+        lastLogin: Date.now(),
+        banned: false
+      });
     } else {
-      await userRef.update({ lastLogin:Date.now() });
+      await userRef.update({ lastLogin: Date.now() });
     }
   } catch(err){
-    console.error(err);
+    console.error("Login error:", err);
     alert("Login failed! Check console.");
   }
 });
 
-/* ===== AUTH ===== */
-auth.onAuthStateChanged(async user => {
+/* ===== AUTH LISTENER ===== */
+auth.onAuthStateChanged(async (user) => {
   if(user){
     const bannedSnap = await db.ref(`/Users/${user.uid}/banned`).get();
-    if(bannedSnap.val()===true){ alert("You are banned."); await auth.signOut(); return; }
+    if(bannedSnap.val() === true){
+      alert("You are banned.");
+      await auth.signOut();
+      return;
+    }
 
-    loginContainer.style.display="none";
-    dashboard.style.display="flex";
-    userInfo.textContent = `Logged in as: ${user.displayName}`; // only name
+    loginContainer.style.display = "none";
+    dashboard.style.display = "flex";
+
+    // Show only user display name
+    userInfo.textContent = `Logged in as: ${user.displayName}`;
 
     loadDevices();
   } else {
-    loginContainer.style.display="flex";
-    dashboard.style.display="none";
+    loginContainer.style.display = "flex";
+    dashboard.style.display = "none";
   }
 });
 
-document.getElementById("logoutBtn").addEventListener("click", ()=>auth.signOut());
+document.getElementById("logoutBtn").addEventListener("click", () => auth.signOut());
 
 /* ===== DEVICE HANDLING ===== */
 function loadDevices(){
@@ -341,51 +351,62 @@ document.getElementById("deviceSelect").addEventListener("change", e=>{
 });
 
 /* ===== RELAYS ===== */
-for(let i=1;i<=4;i++){
-  document.getElementById(`relay${i}-btn`).addEventListener("click", ()=>toggleRelay(i));
+for(let i=1; i<=4; i++){
+  document.getElementById(`relay${i}-btn`)
+    .addEventListener("click", () => toggleRelay(i));
 }
 
 function setupRelayListeners(deviceID){
-  relayRefs.forEach(r=>r.ref.off("value",r.listener));
-  relayRefs=[];
+  relayRefs.forEach(r=>r.ref.off("value", r.listener));
+  relayRefs = [];
 
   for(let i=1;i<=4;i++){
-    const ref=db.ref(`/Devices/${deviceID}/relays/Relay${i}`);
-    const listener=snapshot=>{
-      const state=snapshot.val()===1;
-      const btn=document.getElementById(`relay${i}-btn`);
-      btn.textContent=state?"ON":"OFF";
-      btn.className=`relay-btn ${state?'on':'off'}`;
-      relayCards[i].classList.toggle("active",state);
+    const path = `/Devices/${deviceID}/relays/Relay${i}`;
+    const refDb = db.ref(path);
+
+    const listener = snapshot=>{
+      const state = snapshot.val() === 1;
+      const btn = document.getElementById(`relay${i}-btn`);
+
+      btn.textContent = state ? "ON" : "OFF";
+      btn.className = `relay-btn ${state ? 'on' : 'off'}`;
+      relayCards[i].classList.toggle("active", state);
     };
-    ref.on("value",listener);
-    relayRefs.push({ref,listener});
+
+    refDb.on("value", listener);
+    relayRefs.push({ ref: refDb, listener });
   }
 }
 
 function removeRelayListeners(){
-  relayRefs.forEach(r=>r.ref.off("value",r.listener));
+  relayRefs.forEach(r=>r.ref.off("value", r.listener));
   relayRefs=[];
 }
 
 function toggleRelay(relayNum){
-  if(!selectedDevice)return;
-  const ref=db.ref(`/Devices/${selectedDevice}/relays/Relay${relayNum}`);
-  ref.get().then(snapshot=>{
-    const current=snapshot.val()??0;
-    ref.set(current===1?0:1);
+  if(!selectedDevice) return;
+
+  const path = `/Devices/${selectedDevice}/relays/Relay${relayNum}`;
+  db.ref(path).get().then(snapshot=>{
+    const current = snapshot.val() ?? 0;
+    db.ref(path).set(current === 1 ? 0 : 1);
   });
 }
 
-/* ===== DATE/TIME ===== */
+/* ===== TIME ===== */
 function updateDateTime(){
-  const now=new Date();
-  const options={ weekday:'long', year:'numeric', month:'long', day:'numeric',
-    hour:'2-digit', minute:'2-digit', second:'2-digit'};
-  document.getElementById("datetime").textContent=now.toLocaleString('en-US',options);
+  const now = new Date();
+  const options={
+    weekday:'long', year:'numeric', month:'long', day:'numeric',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  };
+  document.getElementById("datetime").textContent =
+    now.toLocaleString('en-US', options);
 }
+
 setInterval(updateDateTime,1000);
 updateDateTime();
 </script>
+
 </body>
 </html>
