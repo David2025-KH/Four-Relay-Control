@@ -72,14 +72,14 @@ body {
 }
 
 #logoutBtn {
-  padding:10px 24px;
+  padding:12px 28px;
   font-size:1rem;
   border:none;
   border-radius:12px;
   background:#f44336;
   color:white;
   cursor:pointer;
-  margin-bottom:20px;
+  margin-top:20px;
   transition: 0.3s;
 }
 
@@ -176,7 +176,6 @@ button.relay-btn:hover {
 
 <div id="dashboard">
   <div id="user-info"></div>
-  <button id="logoutBtn">Logout</button>
   <h2 style="color:white;">Relay Control Dashboard</h2>
   <div id="datetime"></div>
 
@@ -204,10 +203,13 @@ button.relay-btn:hover {
     <span>Relay 4</span>
     <button class="relay-btn off" id="relay4-btn">OFF</button>
   </div>
+
+  <!-- Logout at bottom -->
+  <button id="logoutBtn">Logout</button>
 </div>
 
 <script>
-// ====== Firebase Config & Init ======
+// ===== Firebase Config & Init =====
 const firebaseConfig = {
   apiKey: "AIzaSyDjzlI-47-q8zakU2W3MVFRxGqXyFYvnXE",
   authDomain: "data-logging-f2cfe.firebaseapp.com",
@@ -274,7 +276,9 @@ auth.onAuthStateChanged(async (user) => {
 
     loginContainer.style.display = "none";
     dashboard.style.display = "flex";
-    userInfo.textContent = `Logged in as: ${user.displayName} (${user.email})`;
+
+    // Show only user display name
+    userInfo.textContent = `Logged in as: ${user.displayName}`;
 
     loadDevices();
   } else {
